@@ -6,7 +6,7 @@ from tqdm import tqdm
 import torch.nn.functional as F
 from ..networks import LinearKanLayers, BSpline
 from ..pde import PoissonSolver
-from utils import train_model,MLP
+from .utils import MLP
 
 
 def run_pde_experiment(
@@ -19,6 +19,8 @@ def run_pde_experiment(
     """Run PDE solving experiment comparing KANs and MLPs"""
 
     device = th.device(device if th.cuda.is_available() else 'cpu')
+    print(f"Using device: {device}")
+
     results = {'kan': [], 'mlp': []}
 
     # Train KANs of different shapes
@@ -28,12 +30,14 @@ def run_pde_experiment(
         for grid_size in grid_sizes:
             print(f"\nTraining KAN shape {shape} with grid size {grid_size}")
 
-            # Create KAN model
+            # Create and verify model
             model = LinearKanLayers(
                 layers=[(shape[i], shape[i + 1]) for i in range(len(shape) - 1)],
                 act_fun=BSpline(degree=3, grid_size=grid_size),
                 res_act_fun=F.silu
             ).to(device)
+
+            print(f"Model parameter count: {sum(p.numel() for p in model.parameters())}")
 
             # Create PDE solver
             solver = PoissonSolver(model).to(device)
@@ -41,19 +45,31 @@ def run_pde_experiment(
 
             # Training loop
             for epoch in tqdm(range(250)):
-                loss, _, _ = solver.loss()
+                loss, interior_loss, boundary_loss = solver.loss()
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
-            # Record results
-            with th.no_grad():
-                l2_err = solver.l2_error().item()
-                h1_err = solver.h1_error().item()
+                if epoch % 50 == 0:
+                    print(f"Epoch {epoch}: Loss = {loss.item():.6f}")
 
-                shape_results['grid_sizes'].append(grid_size)
-                shape_results['l2_errors'].append(l2_err)
-                shape_results['h1_errors'].append(h1_err)
+            # Record results with error handling
+            with th.no_grad():
+                try:
+                    l2_err = solver.l2_error().item()
+                    print(f"L2 error: {l2_err}")
+
+                    # Enable gradients just for H1 computation
+                    with th.enable_grad():
+                        h1_err = solver.h1_error().item()
+                    print(f"H1 error: {h1_err}")
+
+                    shape_results['grid_sizes'].append(grid_size)
+                    shape_results['l2_errors'].append(l2_err)
+                    shape_results['h1_errors'].append(h1_err)
+                except RuntimeError as e:
+                    print(f"Error computing errors: {str(e)}")
+                    continue
 
         results['kan'].append(shape_results)
 

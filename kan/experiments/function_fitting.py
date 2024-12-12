@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 from ..networks import LinearKanLayers, BSpline
 from ..function_fitting import SpecialFunctionDataset, FeynmanDataset
-from utils import train_model,MLP
+from .utils import MLP, train_model
 
 
 def run_function_fitting_experiment(

@@ -78,14 +78,17 @@ class BSpline(ActivationFunction):
         )
 
     def forward(self, x: th.Tensor) -> th.Tensor:
-        basis_vals = b_spline(x, self.__degree, self.__grid_size)
-        return th.matmul(basis_vals, self._coefficients)
+        basis_vals = []
+        for i in range(x.size(1)):
+            feature_basis = b_spline(x[:, i], self.__degree, self.__grid_size)  # [batch, basis]
+            basis_vals.append(feature_basis)
+        return th.stack(basis_vals, dim=-1)
+
 
     def get_size(self) -> int:
         return self.__grid_size + self.__degree
 
     def extend_grid(self, new_grid_size: int):
-        """Extend the grid while preserving function behavior"""
         if new_grid_size <= self.__grid_size:
             return
 
@@ -96,7 +99,7 @@ class BSpline(ActivationFunction):
         # Create new grid points
         new_grid = th.linspace(0, 1, new_grid_size)
 
-        # Interpolate old function to get coefficients at new grid points
+        # Interpolate coefficients to new grid
         new_coeffs = interpolate_bspline(old_grid, old_coeffs, new_grid)
 
         # Update grid size and coefficients

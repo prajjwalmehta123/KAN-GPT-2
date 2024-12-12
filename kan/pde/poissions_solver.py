@@ -4,7 +4,6 @@ import torch.nn.functional as F
 from typing import Callable, Tuple
 import numpy as np
 
-
 class PoissonSolver(nn.Module):
     def __init__(self, model: nn.Module,
                  n_interior: int = 10000,
@@ -39,7 +38,7 @@ class PoissonSolver(nn.Module):
 
     def compute_gradients(self, x: th.Tensor) -> Tuple[th.Tensor, th.Tensor]:
         """Compute first and second derivatives"""
-        x.requires_grad_(True)
+        x.requires_grad_(True)  # Ensure x requires gradients
         u = self.model(x)
 
         # First derivatives
@@ -56,6 +55,8 @@ class PoissonSolver(nn.Module):
     def loss(self) -> Tuple[th.Tensor, th.Tensor, th.Tensor]:
         """Compute PDE loss"""
         x_interior, x_boundary = self.sample_points()
+        x_interior = x_interior.to(next(self.parameters()).device)
+        x_boundary = x_boundary.to(next(self.parameters()).device)
 
         # Interior loss
         laplacian, _ = self.compute_gradients(x_interior)
@@ -71,27 +72,39 @@ class PoissonSolver(nn.Module):
 
     def l2_error(self, n_points: int = 1000) -> th.Tensor:
         """Compute L2 error against true solution"""
-        x = th.rand((n_points, 2)) * 2 - 1
+        x = th.rand((n_points, 2), device=next(self.parameters()).device) * 2 - 1
         pred = self.model(x)
         true = self.true_solution(x)
         return th.mean((pred - true) ** 2)
 
     def h1_error(self, n_points: int = 1000) -> th.Tensor:
         """Compute H1 error against true solution"""
-        x = th.rand((n_points, 2)) * 2 - 1
-        x.requires_grad_(True)
+        device = next(self.parameters()).device
 
+        # Generate points and explicitly set requires_grad
+        x = th.rand((n_points, 2), device=device, requires_grad=True)
+        x = 2 * x - 1  # Scale to [-1, 1]
+
+        # Forward pass to get predictions
         pred = self.model(x)
+
+        # Get true solution
         true = self.true_solution(x)
 
         # L2 part
         l2_err = th.mean((pred - true) ** 2)
 
-        # Gradient part
-        pred_grad = th.autograd.grad(pred.sum(), x, create_graph=True)[0]
-        x.requires_grad_(True)
-        true_grad = th.autograd.grad(true.sum(), x, create_graph=True)[0]
+        # For predicted solution gradient
+        pred_sum = pred.sum()
+        pred_grad = th.autograd.grad(pred_sum, x, create_graph=True, retain_graph=True)[0]
 
+        # Analytical gradients for true solution
+        true_grad_x = np.pi * th.cos(np.pi * x[:, 0].detach()) * th.sin(np.pi * x[:, 1].detach() ** 2)
+        true_grad_y = 2 * np.pi * x[:, 1].detach() * th.sin(np.pi * x[:, 0].detach()) * th.cos(
+            np.pi * x[:, 1].detach() ** 2)
+        true_grad = th.stack([true_grad_x, true_grad_y], dim=1).to(device)
+
+        # Gradient error
         grad_err = th.mean(th.sum((pred_grad - true_grad) ** 2, dim=1))
 
         return l2_err + grad_err
