@@ -158,17 +158,17 @@ def run_pde_experiment(
             # Evaluate
             with th.no_grad():
                 l2_err = solver.l2_error(100).item()
-                h1_err = solver.h1_error(100).item()
 
-                mlp_results.append({
+            h1_err = solver.h1_error(100).item()
+            mlp_results.append({
                     'depth': depth,
                     'params': n_params,
                     'l2_error': l2_err,
                     'h1_error': h1_err
-                })
+            })
 
-                print(f"MLP Final L2 error: {l2_err:.2e}")
-                print(f"MLP Final H1 error: {h1_err:.2e}")
+            print(f"MLP Final L2 error: {l2_err:.2e}")
+            print(f"MLP Final H1 error: {h1_err:.2e}")
 
         except RuntimeError as e:
             if "out of memory" in str(e):
