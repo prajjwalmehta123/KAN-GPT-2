@@ -23,6 +23,8 @@ class MLP(nn.Module):
     def forward(self, x: th.Tensor) -> th.Tensor:
         return self.network(x)
 
+    def count_parameters(self):
+        return sum(p.numel() for p in self.parameters())
 
 def train_model(
         model: nn.Module,
