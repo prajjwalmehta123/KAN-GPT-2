@@ -14,7 +14,7 @@ class LinearKanLayers(nn.Sequential, InfoModule):
         layers: List[Tuple[int, int]],
         act_fun: ActivationFunction,
         res_act_fun: Callable[[th.Tensor], th.Tensor],
-    ) -> None:
+    ):
         super().__init__(
             *[LinearKAN(c_i, c_o, act_fun, res_act_fun) for c_i, c_o in layers]
         )

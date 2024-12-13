@@ -15,7 +15,7 @@ class LinearKAN(nn.Module):
             out_features: int,
             act_fun: ActivationFunction,
             res_act_fun: Callable[[th.Tensor], th.Tensor],
-    ) -> None:
+    ):
         super().__init__()
 
         self.__act_fun = act_fun
@@ -35,7 +35,7 @@ class LinearKAN(nn.Module):
         # Initialize spline coefficients close to zero
         normal_(self._c, 0, 1e-3)
 
-    def forward(self, x: th.Tensor) -> th.Tensor:
+    def forward(self, x: th.Tensor):
         # x shape: [batch_size, in_features]
         batch_size = x.size(0)
 

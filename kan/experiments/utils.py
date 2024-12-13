@@ -9,13 +9,18 @@ class MLP(nn.Module):
     def __init__(self, layer_sizes: List[int]):
         super().__init__()
         layers = []
-        for i in range(len(layer_sizes) - 1):
-            layers.append(nn.Linear(layer_sizes[i], layer_sizes[i + 1]))
-            if i < len(layer_sizes) - 2:
+        for i in range(len(layer_sizes)-1):
+            layers.append(nn.Linear(layer_sizes[i], layer_sizes[i+1]))
+            if i < len(layer_sizes)-2:
                 layers.append(nn.SiLU())
         self.network = nn.Sequential(*layers)
-
-    def forward(self, x):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_normal_(m.weight)
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+    
+    def forward(self, x: th.Tensor) -> th.Tensor:
         return self.network(x)
 
 
