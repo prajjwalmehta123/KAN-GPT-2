@@ -27,4 +27,3 @@ They both achieve a final loss of ~2.46 (despite the KAN model having 25% fewer 
 
 **Hardware**: Single 1080ti GPU
 
-**Wandb**: [link](https://wandb.ai/cg123/kan-transformer?nw=nwusercg123).
