@@ -26,4 +26,3 @@ They both achieve a final loss of ~2.46 (despite the KAN model having 25% fewer 
 - `seq_len`: 64
 
 **Hardware**: Single 1080ti GPU
-
