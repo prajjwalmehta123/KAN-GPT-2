@@ -1,4 +1,4 @@
-# Training small GPT-2 style models using KANs instead of MLPs in JAX
+# Training small GPT-2 style models using KANs instead of MLPs
 
 This repository compares transformers using multilayer perceptron (MLP) and Kolmogorov-Arnold networks (KAN) layers.
 
